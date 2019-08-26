@@ -47,7 +47,7 @@ RUN     apt-get install --yes \
         libsymbol-global-name-perl \
         libdate-manip-perl \
         libmodule-refresh-perl \
-        libcgi-emulate-psgi-perl
+        libcgi-emulate-psgi-perl \
         libmime-types-perl \
         libdbix-searchbuilder-perl \
         liblocale-maketext-lexicon-perl \
