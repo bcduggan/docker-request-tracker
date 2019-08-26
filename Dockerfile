@@ -14,7 +14,7 @@ RUN     apt-get update --yes
 
 # Install Perl dependencies:
 RUN     apt-get install --yes \
-        autoconf
+        autoconf \
         cpanminus
 
 # Install SQLITE dependencies:
@@ -103,7 +103,7 @@ RUN tar --directory=$RT_SRC_ROOT --file=$RT_SRC_ARCHIVE --extract --verbose
 RUN     cd $RT_SRC_HOME && \
         ./configure.ac \
         --disable-graphviz --disable-gd --disable-gnupg --disable-smime --disable-externalauth \
-        --with-db-type=SQLite && \
+        --with-db-type=SQLite
 
 RUN cd $RT_SRC_HOME && make testdeps
 
