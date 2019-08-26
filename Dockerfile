@@ -14,4 +14,4 @@ COPY checksums/$RT_TAG/SHA512SUMS $RT_SRC_ROOT
 RUN sha512sum --check $RT_SRC_ROOT/SHA512SUMS
 
 # Unarchives to rt-$RT_TAG.tar.gz
-RUN tar --directory=$RT_SRC_ROOT --file=$RT_TAG.tar.gz --extract --verbose
+RUN tar --directory=$RT_SRC_ROOT --file=$RT_SRC_ROOT/$RT_TAG.tar.gz --extract --verbose
