@@ -14,16 +14,6 @@ ENV BUILD_RT_EXTERNALAUTH ${EXTERNALAUTH:-0}
 ENV BUILD_RT_GPG ${GPG:-0}
 ENV BUILD_RT_SMIME ${SMIME:-0}
 
-ENV RT_VERSION 4.4.4
-ENV RT_ROOT /opt
-ENV RT_SRC_ROOT $RT_ROOT/src
-ENV RT_TAG rt-$RT_VERSION
-ENV RT_HOME $RT_ROOT/rt4
-ENV RT_SRC_ARCHIVE $RT_SRC_ROOT/$RT_TAG.tar.gz
-ENV RT_SRC_HOME $RT_SRC_ROOT/rt-$RT_TAG
-ENV PERL5LIB $RT_HOME/lib
-ENV RT_FIX_DEPS_CMD /usr/bin/cpanm
-
 # Install Perl dependencies:
 RUN     apt-get update --yes && \
         apt-get install --yes \
@@ -89,13 +79,6 @@ RUN     apt-get update --yes && \
 RUN /usr/bin/cpanm Email::Address@1.912
 RUN /usr/bin/cpanm Email::Address::List@0.06
 
-# Install SQLITE dependencies:
-RUN     [ "$BUILD_RT_DB" == "SQLite" ] && \
-        apt-get update --yes && \
-        apt-get install --yes \
-        sqlite3 \
-        libdbd-sqlite3-perl
-
 # Install FASTCGI dependencies:
 RUN     apt-get update --yes && \
         apt-get install --yes \
@@ -126,17 +109,54 @@ RUN     [ $BUILD_RT_GD -eq 1 ] && \
         libgd-graph-perl
 
 # Install EXTERNALAUTH dependencies:
-RUN     [ $BUILD_RT_EXTERNALAUTH -eq 1 ] && \
-        apt-get update --yes && \
-        apt-get install --yes \
-        libnet-ldap-perl
+RUN set -eux; \
+        if [ $BUILD_RT_EXTERNALAUTH -eq 1 ]; then \
+            apt-get update --yes && \
+            apt-get install --yes \
+            libnet-ldap-perl; \
+        fi
 
-## TODO: Install GnuPG::Interface-compatible version of GnuPG
-## Install GPG dependencies:
-#RUN     apt-get install --yes \
-#        gnupg1 \
-#        libgnupg-interface-perl \
-#        libperlio-eol-perl
+# TODO: Install GnuPG::Interface-compatible version of GnuPG
+# Install GPG dependencies:
+RUN set -eux; \
+        if [ $BUILD_RT_GPG -eq 1 ]; then \
+            apt-get update --yes && \
+            apt-get install --yes \
+            libgnupg-interface-perl \
+            libperlio-eol-perl; \
+        fi
+
+
+# Install database dependencies:
+RUN set -eux; \
+        if [ "$BUILD_RT_DB" = "SQLite" ]; then \
+            apt-get update --yes && \
+            apt-get install --yes \
+            sqlite3 \
+            libdbd-sqlite3-perl; \
+        elif [ "$BUILD_RT_DB" = "Pg" ]; then \
+            apt-get update --yes && \
+            apt-get install --yes \
+            libdbd-pg-perl; \
+        elif [ "$BUILD_RT_DB" = "mysql" ]; then \
+            apt-get update --yes && \
+            apt-get install --yes \
+            libdbd-mysql-perl; \
+        else \
+            exit 1; \
+        fi
+
+ENV RT_ROOT /opt
+ENV RT_SRC_ROOT $RT_ROOT/src
+ENV RT_HOME $RT_ROOT/rt4
+ENV PERL5LIB $RT_HOME/lib
+ENV RT_FIX_DEPS_CMD /usr/bin/cpanm
+
+ENV RT_VERSION 4.4.4
+
+ENV RT_TAG rt-$RT_VERSION
+ENV RT_SRC_ARCHIVE $RT_SRC_ROOT/$RT_TAG.tar.gz
+ENV RT_SRC_HOME $RT_SRC_ROOT/$RT_TAG
 
 RUN mkdir --parents $RT_SRC_ROOT
 
@@ -148,3 +168,4 @@ RUN /usr/bin/sha512sum --check $RT_SRC_ROOT/SHA512SUMS
 
 # Unarchives to rt-$RT_TAG
 RUN tar --directory=$RT_SRC_ROOT --file=$RT_SRC_ARCHIVE --extract --verbose
+RUN mv $RT_SRC_ROOT/rt-$RT_TAG $RT_SRC_HOME
