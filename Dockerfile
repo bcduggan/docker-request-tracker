@@ -5,8 +5,8 @@ ENV RT_SRC_ROOT $RT_ROOT/src
 ENV RT_VERSION 4.4.4
 ENV RT_TAG rt-$RT_VERSION
 ENV RT_HOME $RT_ROOT/rt4
+ENV RT_SRC_ARCHIVE $RT_SRC_ROOT/$RT_TAG.tar.gz
 ENV RT_SRC_HOME $RT_SRC_ROOT/rt-$RT_TAG
-ENV RT_SRC_ARCHIVE $RT_SRC_HOME.tar.gz
 ENV PERL5LIB $RT_HOME/lib
 ENV RT_FIX_DEPS_CMD /usr/bin/cpanm
 
@@ -14,6 +14,7 @@ RUN     apt-get update --yes
 
 # Install Perl dependencies:
 RUN     apt-get install --yes \
+        build-essential \
         autoconf \
         cpanminus
 
@@ -33,10 +34,11 @@ RUN     apt-get install --yes \
         libterm-readkey-perl
 
 # Install MAILGATE dependencies:
-RUN     $RT_FIX_DEPS_CMD Mozilla::CA@20180117
+RUN /usr/bin/cpanm Mozilla::CA@20180117
 
 # Install CORE dependencies
 RUN     apt-get install --yes \
+        starlet \
         liblocale-maketext-fuzzy-perl \
         libhtml-mason-psgihandler-perl \
         libscope-upper-perl \
@@ -86,27 +88,39 @@ RUN     apt-get install --yes \
         libhtml-formattext-withlinks-andtables-perl \
         libmime-tools-perl
 
-RUN $RT_FIX_DEPS_CMD Plack::Handler::Starlet@0.31
-RUN $RT_FIX_DEPS_CMD Email::Address@1.912
-RUN $RT_FIX_DEPS_CMD Email::Address::List@0.06
+# RT requires later versions of Email::Address and
+# Email::Address::List than are in apt
+RUN /usr/bin/cpanm Email::Address@1.912
+RUN /usr/bin/cpanm Email::Address::List@0.06
 
-# Install RT
+# Install GRAPHVIZ dependencies:
+RUN     apt-get install --yes \
+        libgraphviz-perl
+
+# Install GD dependencies:
+RUN     apt-get install --yes \
+        libgd-perl \
+        libgd-text-perl \
+        libgd-graph-perl
+
+# Install EXTERNALAUTH dependencies:
+RUN     apt-get install --yes \
+        libnet-ldap-perl
+
+## TODO: Install GnuPG::Interface-compatible version of GnuPG
+## Install GPG dependencies:
+#RUN     apt-get install --yes \
+#        gnupg1 \
+#        libgnupg-interface-perl \
+#        libperlio-eol-perl
+
+RUN mkdir --parents $RT_SRC_ROOT
+
 ADD https://github.com/bestpractical/rt/archive/$RT_TAG.tar.gz $RT_SRC_ARCHIVE
 
-COPY checksums/$RT_TAG/SHA512SUMS $RT_SRC_ROOT
+COPY checksums/$RT_TAG/SHA512SUMS $RT_SRC_ROOT/SHA512SUMS
 
-RUN sha512sum --check $RT_SRC_ROOT/SHA512SUMS
+RUN /usr/bin/sha512sum --check $RT_SRC_ROOT/SHA512SUMS
 
-# Unarchives to rt-$RT_TAG ($RT_SRC_HOME)
+# Unarchives to rt-$RT_TAG ($RT_SRC_ARCHIVE)
 RUN tar --directory=$RT_SRC_ROOT --file=$RT_SRC_ARCHIVE --extract --verbose
-
-RUN     cd $RT_SRC_HOME && \
-        ./configure.ac \
-        --disable-graphviz --disable-gd --disable-gnupg --disable-smime --disable-externalauth \
-        --with-db-type=SQLite
-
-RUN cd $RT_SRC_HOME && make testdeps
-
-#RUN cd $RT_SRC_HOME && make install
-
-#RUN cd $RT_SRC_HOME && make initialize-database
