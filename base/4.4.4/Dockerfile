@@ -1,5 +1,19 @@
 FROM debian:buster-20190812
 
+ARG DB
+ARG GRAPHVIZ
+ARG GD
+ARG EXTERNALAUTH
+ARG GPG
+ARG SMIME
+
+ENV BUILD_RT_DB ${DB:-SQLite}
+ENV BUILD_RT_GRAPHVIZ ${GRAPHVIZ:-1}
+ENV BUILD_RT_GD ${GD:-1}
+ENV BUILD_RT_EXTERNALAUTH ${EXTERNALAUTH:-0}
+ENV BUILD_RT_GPG ${GPG:-0}
+ENV BUILD_RT_SMIME ${SMIME:-0}
+
 ENV RT_VERSION 4.4.4
 ENV RT_ROOT /opt
 ENV RT_SRC_ROOT $RT_ROOT/src
@@ -76,7 +90,8 @@ RUN /usr/bin/cpanm Email::Address@1.912
 RUN /usr/bin/cpanm Email::Address::List@0.06
 
 # Install SQLITE dependencies:
-RUN     apt-get update --yes && \
+RUN     [ "$BUILD_RT_DB" == "SQLite" ] && \
+        apt-get update --yes && \
         apt-get install --yes \
         sqlite3 \
         libdbd-sqlite3-perl
@@ -96,21 +111,23 @@ RUN     apt-get update --yes && \
 # Install MAILGATE dependencies:
 RUN /usr/bin/cpanm Mozilla::CA@20180117
 
-
 # Install GRAPHVIZ dependencies:
-RUN     apt-get update --yes && \
+RUN     [ $BUILD_RT_GRAPHVIZ -eq 1 ] && \
+        apt-get update --yes && \
         apt-get install --yes \
         libgraphviz-perl
 
 # Install GD dependencies:
-RUN     apt-get update --yes && \
+RUN     [ $BUILD_RT_GD -eq 1 ] && \
+        apt-get update --yes && \
         apt-get install --yes \
         libgd-perl \
         libgd-text-perl \
         libgd-graph-perl
 
 # Install EXTERNALAUTH dependencies:
-RUN     apt-get update --yes && \
+RUN     [ $BUILD_RT_EXTERNALAUTH -eq 1 ] && \
+        apt-get update --yes && \
         apt-get install --yes \
         libnet-ldap-perl
 
