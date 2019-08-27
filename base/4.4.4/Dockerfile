@@ -13,22 +13,26 @@ ENV RT_FIX_DEPS_CMD /usr/bin/cpanm
 RUN     apt-get update --yes
 
 # Install Perl dependencies:
-RUN     apt-get install --yes \
+RUN     apt-get update --yes && \
+        apt-get install --yes \
         build-essential \
         autoconf \
         cpanminus
 
 # Install SQLITE dependencies:
-RUN     apt-get install --yes \
+RUN     apt-get update --yes && \
+        apt-get install --yes \
         sqlite3 \
         libdbd-sqlite3-perl
 
 # Install FASTCGI dependencies:
-RUN     apt-get install --yes \
+RUN     apt-get update --yes && \
+        apt-get install --yes \
         libfcgi-perl
 
 # Install CLI dependencies:
-RUN     apt-get install --yes \
+RUN     apt-get update --yes && \
+        apt-get install --yes \
         libterm-readline-gnu-perl \
         libterm-readline-perl-perl \
         libterm-readkey-perl
@@ -37,7 +41,8 @@ RUN     apt-get install --yes \
 RUN /usr/bin/cpanm Mozilla::CA@20180117
 
 # Install CORE dependencies
-RUN     apt-get install --yes \
+RUN     apt-get update --yes && \
+        apt-get install --yes \
         starlet \
         liblocale-maketext-fuzzy-perl \
         libhtml-mason-psgihandler-perl \
@@ -94,17 +99,20 @@ RUN /usr/bin/cpanm Email::Address@1.912
 RUN /usr/bin/cpanm Email::Address::List@0.06
 
 # Install GRAPHVIZ dependencies:
-RUN     apt-get install --yes \
+RUN     apt-get update --yes && \
+        apt-get install --yes \
         libgraphviz-perl
 
 # Install GD dependencies:
-RUN     apt-get install --yes \
+RUN     apt-get update --yes && \
+        apt-get install --yes \
         libgd-perl \
         libgd-text-perl \
         libgd-graph-perl
 
 # Install EXTERNALAUTH dependencies:
-RUN     apt-get install --yes \
+RUN     apt-get update --yes && \
+        apt-get install --yes \
         libnet-ldap-perl
 
 ## TODO: Install GnuPG::Interface-compatible version of GnuPG
