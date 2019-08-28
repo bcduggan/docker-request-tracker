@@ -1,4 +1,4 @@
-FROM debian:buster-20190812
+FROM debian:buster-20190812-slim
 
 ARG DB
 ARG GRAPHVIZ
