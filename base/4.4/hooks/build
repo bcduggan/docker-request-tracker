@@ -5,8 +5,9 @@
 # For example:
 #   4.4.5-base_developer_no-smime
 
-PATCH=$(echo $IMAGE_NAME | cut --fields=1 --delimiter='-' | cut --fields=3 --delimiter='.')
-FEATURE_FLAGS=$(echo $IMAGE_NAME | cut --fields=2- --delimiter='_' | tr '_' ' ')
+TAG=$(echo $IMAGE_NAME | cut --fields=2 --delimiter=':')
+PATCH=$(echo $TAG | cut --fields=1 --delimiter='-' | cut --fields=3 --delimiter='.')
+FEATURE_FLAGS=$(echo $TAG | cut --fields=2- --delimiter='_' | tr '_' ' ')
 
 BUILD_ARGS=""
 
