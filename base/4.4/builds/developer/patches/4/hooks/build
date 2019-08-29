@@ -1,3 +1,0 @@
-#!/bin/bash
-
-docker build --build-arg DEVELOPER=enable --build-arg PATCH=4 -f $DOCKERFILE_PATH -t $IMAGE_NAME .

@@ -185,7 +185,7 @@ WORKDIR $RT_SRC_ROOT
 
 ADD https://github.com/bestpractical/rt/archive/$RT_TAG.tar.gz ./
 
-COPY checksums/$RT_VERSION/SHA512SUMS ./
+COPY files/${PATCH}/SHA512SUMS ./
 
 RUN     /usr/bin/sha512sum --check SHA512SUMS && \
         tar --file=$RT_TAG.tar.gz --extract --verbose && \
