@@ -1,6 +1,6 @@
 ARG PATCH=4
 
-FROM request-tracker-base:4.4.${PATCH}-development
+FROM bcduggan/request-tracker:4.4.${PATCH}-base-development
 
 ARG PATCH
 
