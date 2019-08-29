@@ -1,18 +1,34 @@
 FROM debian:buster-20190812-slim
 
-ARG DB
-ARG GRAPHVIZ
-ARG GD
+ARG DB_TYPE=SQLite
+ARG GRAPHVIZ=enable
+ARG GD=enable
 ARG EXTERNALAUTH
 ARG GPG
 ARG SMIME
+ARG DEVELOPER
+ARG PATCH=4
 
-ENV BUILD_RT_DB ${DB:-SQLite}
-ENV BUILD_RT_GRAPHVIZ ${GRAPHVIZ:-1}
-ENV BUILD_RT_GD ${GD:-1}
-ENV BUILD_RT_EXTERNALAUTH ${EXTERNALAUTH:-0}
-ENV BUILD_RT_GPG ${GPG:-0}
-ENV BUILD_RT_SMIME ${SMIME:-0}
+ENV BUILD_DB_TYPE ${DB_TYPE:-SQLite}
+
+# Install database dependencies:
+RUN set -eux; \
+        if [ "${BUILD_DB_TYPE}" = "SQLite" ]; then \
+            apt-get update --yes && \
+            apt-get install --yes \
+            sqlite3 \
+            libdbd-sqlite3-perl; \
+        elif [ "${BUILD_DB_TYPE}" = "Pg" ]; then \
+            apt-get update --yes && \
+            apt-get install --yes \
+            libdbd-pg-perl; \
+        elif [ "${BUILD_DB_TYPE}" = "mysql" ]; then \
+            apt-get update --yes && \
+            apt-get install --yes \
+            libdbd-mysql-perl; \
+        else \
+            exit 1; \
+        fi
 
 # Install Perl dependencies:
 RUN     apt-get update --yes && \
@@ -72,7 +88,8 @@ RUN     apt-get update --yes && \
         libhtml-rewriteattributes-perl \
         libnet-cidr-perl \
         libhtml-formattext-withlinks-andtables-perl \
-        libmime-tools-perl
+        libmime-tools-perl \
+        libtext-template-perl
 
 # RT requires later versions of Email::Address and
 # Email::Address::List than are in apt
@@ -94,14 +111,21 @@ RUN     apt-get update --yes && \
 # Install MAILGATE dependencies:
 RUN /usr/bin/cpanm Mozilla::CA@20180117
 
+ENV BUILD_GRAPHVIZ ${GRAPHVIZ:-enable}
+ENV BUILD_GD ${GD:-enable}
+ENV BUILD_EXTERNALAUTH ${EXTERNALAUTH:-disable}
+ENV BUILD_GPG ${GPG:-disable}
+ENV BUILD_SMIME ${SMIME:-disable}
+ENV BUILD_DEVELOPER ${DEVELOPER:-disable}
+
 # Install GRAPHVIZ dependencies:
-RUN     [ $BUILD_RT_GRAPHVIZ -eq 1 ] && \
+RUN     [ "${BUILD_GRAPHVIZ}" = "enable" ] && \
         apt-get update --yes && \
         apt-get install --yes \
         libgraphviz-perl
 
 # Install GD dependencies:
-RUN     [ $BUILD_RT_GD -eq 1 ] && \
+RUN     [ "${BUILD_GD}" = "enable" ] && \
         apt-get update --yes && \
         apt-get install --yes \
         libgd-perl \
@@ -110,7 +134,7 @@ RUN     [ $BUILD_RT_GD -eq 1 ] && \
 
 # Install EXTERNALAUTH dependencies:
 RUN set -eux; \
-        if [ $BUILD_RT_EXTERNALAUTH -eq 1 ]; then \
+        if [ "${BUILD_EXTERNALAUTH}" = "enable" ]; then \
             apt-get update --yes && \
             apt-get install --yes \
             libnet-ldap-perl; \
@@ -119,53 +143,72 @@ RUN set -eux; \
 # TODO: Install GnuPG::Interface-compatible version of GnuPG
 # Install GPG dependencies:
 RUN set -eux; \
-        if [ $BUILD_RT_GPG -eq 1 ]; then \
+        if [ "${BUILD_GPG}" = "enable" ]; then \
             apt-get update --yes && \
             apt-get install --yes \
             libgnupg-interface-perl \
             libperlio-eol-perl; \
         fi
 
-
-# Install database dependencies:
+# Install DEVELOPER dependencies:
 RUN set -eux; \
-        if [ "$BUILD_RT_DB" = "SQLite" ]; then \
+        if [ "${BUILD_DEVELOPER}" = "enable" ]; then \
             apt-get update --yes && \
             apt-get install --yes \
-            sqlite3 \
-            libdbd-sqlite3-perl; \
-        elif [ "$BUILD_RT_DB" = "Pg" ]; then \
-            apt-get update --yes && \
-            apt-get install --yes \
-            libdbd-pg-perl; \
-        elif [ "$BUILD_RT_DB" = "mysql" ]; then \
-            apt-get update --yes && \
-            apt-get install --yes \
-            libdbd-mysql-perl; \
-        else \
-            exit 1; \
+            libtest-nowarnings-perl \
+            libtest-warn-perl \
+            liblog-dispatch-perl-perl \
+            libtest-mocktime-perl \
+            libset-tiny-perl \
+            libtest-email-perl \
+            libcrypt-x509-perl \
+            libemail-abstract-perl \
+            libencode-hanextra-perl \
+            libtest-pod-perl \
+            libtest-longstring-perl \
+            libtest-www-mechanize-psgi-perl \
+            libtest-deep-perl \
+            liblocale-po-perl \
+            libtest-expect-perl \
+            libxml-simple-perl \
+            libplack-middleware-test-stashwarnings-perl \
+            libmojo-server-fastcgi-perl \
+            libnet-ldap-server-test-perl; \
         fi
 
-ENV RT_ROOT /opt
-ENV RT_SRC_ROOT $RT_ROOT/src
-ENV RT_HOME $RT_ROOT/rt4
-ENV PERL5LIB $RT_HOME/lib
-ENV RT_FIX_DEPS_CMD /usr/bin/cpanm
+ENV RT_HOME=/rt4
+ENV RT_SRC_ROOT /usr/local/src
+ENV RT_VERSION 4.4.${PATCH}
+ENV RT_TAG rt-${RT_VERSION}
 
-ENV RT_VERSION 4.4.4
+WORKDIR $RT_SRC_ROOT
 
-ENV RT_TAG rt-$RT_VERSION
-ENV RT_SRC_ARCHIVE $RT_SRC_ROOT/$RT_TAG.tar.gz
-ENV RT_SRC_HOME $RT_SRC_ROOT/$RT_TAG
+ADD https://github.com/bestpractical/rt/archive/$RT_TAG.tar.gz ./
 
-RUN mkdir --parents $RT_SRC_ROOT
+COPY checksums/$RT_VERSION/SHA512SUMS ./
 
-ADD https://github.com/bestpractical/rt/archive/$RT_TAG.tar.gz $RT_SRC_ARCHIVE
+RUN     /usr/bin/sha512sum --check SHA512SUMS && \
+        tar --file=$RT_TAG.tar.gz --extract --verbose && \
+        mv rt-$RT_TAG $RT_TAG
 
-COPY checksums/$RT_TAG/SHA512SUMS $RT_SRC_ROOT/SHA512SUMS
+WORKDIR $RT_SRC_ROOT/$RT_TAG
 
-RUN /usr/bin/sha512sum --check $RT_SRC_ROOT/SHA512SUMS
+RUN     ./configure.ac \
+        --prefix=${RT_HOME} \
+        --with-db-type=${BUILD_DB_TYPE} \
+        --${BUILD_GRAPHVIZ}-graphviz \
+        --${BUILD_GD}-gd \
+        --${BUILD_EXTERNALAUTH}-externalauth \
+        --${BUILD_GPG}-gpg \
+        --${BUILD_SMIME}-smime \
+        --${BUILD_DEVELOPER}-developer && \
+        make testdeps && \
+        make install && \
+        rm -rf /root/.cpanm && \
+        apt-get purge --yes --autoremove \
+        build-essential \
+        autoconf \
+        cpanminus && \
+        apt-get clean --yes
 
-# Unarchives to rt-$RT_TAG
-RUN tar --directory=$RT_SRC_ROOT --file=$RT_SRC_ARCHIVE --extract --verbose
-RUN mv $RT_SRC_ROOT/rt-$RT_TAG $RT_SRC_HOME
+WORKDIR $RT_HOME
