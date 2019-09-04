@@ -1,0 +1,30 @@
+# Request Tracker Docker image definitions
+
+Primarily intended for CI right now. However, these definitions should
+be extensible enough to run an RT server under Apache or under an HA
+server and against persistent SQLite, MariaDB, and PostgreSQL servers.
+
+## CI
+
+This image does not include RT developer dependencies. You must
+install these packages in your CI file:
+
+- libtest-nowarnings-perl
+- libtest-warn-perl
+- liblog-dispatch-perl-perl
+- libtest-mocktime-perl
+- libset-tiny-perl
+- libtest-email-perl
+- libcrypt-x509-perl
+- libemail-abstract-perl
+- libencode-hanextra-perl
+- libtest-pod-perl
+- libtest-longstring-perl
+- libtest-www-mechanize-psgi-perl
+- libtest-deep-perl
+- liblocale-po-perl
+- libtest-expect-perl
+- libxml-simple-perl
+- libplack-middleware-test-stashwarnings-perl
+- libmojo-server-fastcgi-perl
+- libnet-ldap-server-test-perl
